@@ -152,25 +152,12 @@ genders = sapply(shootouts, function(x) x$Gender[1])
 tab = table(year(matchdates))
 data = data.frame(Year = names(tab), Count = as.numeric(tab))
 
-
 # ggplot(data, aes(x = Year, y = Count)) +
 #   geom_bar(stat = "identity", fill = "skyblue", color = "black") +
 #   labs(title = "Penalty Shootouts by Year",
 #        x = "Year",
 #        y = "# Penalty Shootouts")
 #ggsave("shootouts by year.png")
-
-
-decades = floor(year(matchdates) / 10) * 10
-tab = table(paste0("[", decades, "-", decades + 10, "]"))
-data = data.frame(Decade = names(tab), Count = as.numeric(tab))
-data$Decade[match("[2020-2030]", data$Decade)] = "[2020-now]"
-ggplot(data, aes(x = Decade, y = Count)) +
-  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
-  labs(title = "Penalty Shootouts by Decade",
-       x = "Decade",
-       y = "# Penalty Shootouts")
-# ggsave("shootouts by decade.png")
 
 
 # Create the bar plot by League
@@ -369,6 +356,27 @@ ggsave("gender x optimistic on success.png")
 all_shootouts %>% 
   group_by(Gender, score_type_optimistic) %>% 
   summarise(avg_success = mean(hasScored), count = n())
+
+
+####### Penalty Shootouts by Decade
+data = data.table(all_shootouts)[, .(avg_success = mean(hasScored), .N), by = floor(year(Match_Date) / 10) * 10]
+colnames(data)[1] = "Decade"
+data$Decade = paste0("[", data$Decade, "-", data$Decade + 10, ")")
+data$Decade[match("[2020-2030)", data$Decade)] = "[2020-now)"
+ggplot(data, aes(x = Decade, y = N)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  labs(title = "Penalty Shootouts by Decade",
+       x = "Decade",
+       y = "# Penalty Shootouts")
+# ggsave("shootouts by decade.png")
+ggplot(data, aes(x = Decade, y = avg_success)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  geom_text(aes(label = round(avg_success, 3)), vjust = -0.5) + # Add mean values on top of bars
+  labs(title = "Goal success rate by Decade",
+       x = "Decade",
+       y = "Average success rate")
+# ggsave("success_rate by decade.png")
+
 
 ####### results by tournament stage
 
