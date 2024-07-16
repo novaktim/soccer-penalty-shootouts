@@ -197,6 +197,16 @@ for (i in seq_along(shootouts)) {
   
   team_started_shootout = shootout$Penalty_Number %% 2 == 1
   
+  
+  # If the team shooting is leading in goals, behind in goals or tie
+  # Pessimistic ignores that the second team has still a shot in the round, while optimistic look at the goal differences after the round.
+  score_own = ifelse(shootout$Home_Away == "Home", score_before_home, score_before_away)
+  score_opponent = ifelse(shootout$Home_Away == "Home", score_before_away, score_before_home)
+  shootout[, "Goal_Difference_Pessimistic"] = score_own - score_opponent
+  shootout[team_started_shootout, "Goal_Difference_Optimistic"] = score_own[team_started_shootout] - score_opponent[team_started_shootout]
+  shootout[!team_started_shootout, "Goal_Difference_Optimistic"] = score_own[!team_started_shootout] + 1 - score_opponent[!team_started_shootout]
+  
+  
   # If the next scored goal is deciding to win
   # e.g. after 5 rounds: 1:0, 2:1, 3:2, 4:3,... for starter team, 0:0, 1:1, 2:2, 3:3, 4:4, 5:5,... for non-starter team
   
@@ -244,6 +254,11 @@ all_shootouts$team_started_shootout = all_shootouts$Penalty_Number %% 2 == 1
 print(mean(all_shootouts$hasScored))
 print(data.table(all_shootouts)[, .("Mean True Win" = mean(Is_Decisive_To_Win), 
                                     "Mean True Lose" = mean(Is_Decisive_To_Lose)), by = c("Home_Away", "team_started_shootout")])
+
+print(data.table(all_shootouts)[, .("Mean Scored" = mean(hasScored), .N), by = 
+  ifelse(all_shootouts$Goal_Difference_Pessimistic > 1, "pess leading", ifelse(all_shootouts$Goal_Difference_Pessimistic < 1, "pess behind", "pess tie"))])
+print(data.table(all_shootouts)[, .("Mean Scored" = mean(hasScored), .N), by = 
+  ifelse(all_shootouts$Goal_Difference_Optimistic > 1, "opti leading", ifelse(all_shootouts$Goal_Difference_Optimistic < 1, "opti behind", "opti tie"))])
 
 
 ####### results by tournament stage
