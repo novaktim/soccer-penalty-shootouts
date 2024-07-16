@@ -7,6 +7,7 @@ library(tidyverse)
 library(ggplot2)
 library(lubridate)
 library(data.table)
+library(readxl)
 
 
 ########################################################################################################################
@@ -168,7 +169,7 @@ ggplot(data, aes(y = reorder(League, Count), x = Count)) +
   labs(title = "Penalty Shootouts by League",
        x = "# Penalty Shootouts",
        y = "League")
-ggsave("shootouts by league.png")
+#ggsave("shootouts by league.png")
 
 # Create the bar plot by Gender
 # tab = table(genders)
@@ -246,33 +247,77 @@ print(data.table(all_shootouts)[, .("Mean True Win" = mean(Is_Decisive_To_Win),
 
 
 ####### results by tournament stage
-df_quarter = all_shootouts[grepl("Quarter-finals", all_shootouts$Matchweek) ,]
-df_semi = all_shootouts[grepl("Semi-finals", all_shootouts$Matchweek) ,]
-df_round16 = all_shootouts[grepl("Round of 16", all_shootouts$Matchweek) ,]
-df_final = all_shootouts[grepl("Final", all_shootouts$Matchweek) | grepl("Gold-medal match", all_shootouts$Matchweek)  ,]
-df_thirdplace= all_shootouts[grepl("Third-place match", all_shootouts$Matchweek)   ,]
+
+all_shootouts = all_shootouts %>%
+  mutate(Stage = case_when(
+    grepl("Quarter-finals", Matchweek) ~ "Quarter-finals",
+    grepl("Semi-finals", Matchweek) ~ "Semi-finals",
+    grepl("Round of 16", Matchweek) ~ "Round of 16",
+    grepl("Final", Matchweek) | grepl("Gold-medal match", Matchweek) ~ "Final",
+    grepl("Third-place match", Matchweek) ~ "Third-place match",
+    # grepl("Repechage", Matchweek) ~ "Repechage", #sample size too small to look at these special cases
+    #  grepl("Fifth-place", Matchweek) ~ "Fifth-place match",
+    TRUE ~ NA_character_ # Assign NA to rows that don't match any of the conditions
+  ))
+
+success_stage = all_shootouts %>% 
+  group_by(Stage) %>% 
+  summarise(avg_success = mean(hasScored), count = n()) %>% 
+  filter(!is.na(Stage))
+# reorder tournament stages
+stage_order <- c("Round of 16", "Quarter-finals", "Semi-finals", "Third-place match", "Final")
+success_stage$Stage <- factor(success_stage$Stage, levels = stage_order)
 
 
-# Combine means into a single dataframe
-means_df = data.frame(
-  stage = c("Overall", "Round of 16", "Quarter-finals", "Semi-finals", "Third-place match", "Final"),
-  avg_Success = c(mean(all_shootouts$hasScored), mean(df_round16$hasScored), 
-                  mean(df_quarter$hasScored), mean(df_semi$hasScored),
-                  mean(df_thirdplace$hasScored), mean(df_final$hasScored))
-  
-)
-
-means_df$stage = factor(means_df$stage,
-                        levels = c("Overall", "Round of 16", "Quarter-finals",
-                                   "Semi-finals", "Third-place match", "Final"))
-# Create a bar plot
-ggplot(means_df, aes(x = stage, y = avg_Success)) +
-  geom_bar(stat = "identity", fill = "skyblue") +
-  geom_text(aes(label = round(avg_Success, 3)), vjust = -0.5) + # Add mean values on top of bars
+success_stage %>% 
+  ggplot(aes(x = Stage, y = avg_success)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  geom_text(aes(label = round(avg_success, 3)), vjust = -0.5) + # Add mean values on top of bars
+  geom_hline(aes(yintercept = 0.714, linetype = "M = 0.714"), color = "red") +
+  scale_linetype_manual(name = "", values = "dashed") +
   labs(title = "",
        x = "Tournament stage",
        y = "Average success rate") 
-ggsave("avg succes for stages.png")
+#ggsave("stages - success.png")
+
+#difference from mean
+success_stage %>% 
+  mutate(difference = avg_success - 0.714) %>% 
+  ggplot(aes(x = Stage, y = difference)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  scale_linetype_manual(name = "", values = "dashed") +
+  labs(title = "",
+       x = "Tournament stage",
+       y = "Average success rate") 
+ggsave("stages - success with differences.png")
+
+# df_quarter = all_shootouts[grepl("Quarter-finals", all_shootouts$Matchweek) ,]
+# df_semi = all_shootouts[grepl("Semi-finals", all_shootouts$Matchweek) ,]
+# df_round16 = all_shootouts[grepl("Round of 16", all_shootouts$Matchweek) ,]
+# df_final = all_shootouts[grepl("Final", all_shootouts$Matchweek) | grepl("Gold-medal match", all_shootouts$Matchweek)  ,]
+# df_thirdplace= all_shootouts[grepl("Third-place match", all_shootouts$Matchweek)   ,]
+# 
+# 
+# # Combine means into a single dataframe
+# means_df = data.frame(
+#   stage = c("Overall", "Round of 16", "Quarter-finals", "Semi-finals", "Third-place match", "Final"),
+#   avg_Success = c(mean(all_shootouts$hasScored), mean(df_round16$hasScored), 
+#                   mean(df_quarter$hasScored), mean(df_semi$hasScored),
+#                   mean(df_thirdplace$hasScored), mean(df_final$hasScored))
+#   
+# )
+# 
+# means_df$stage = factor(means_df$stage,
+#                         levels = c("Overall", "Round of 16", "Quarter-finals",
+#                                    "Semi-finals", "Third-place match", "Final"))
+# # Create a bar plot
+# ggplot(means_df, aes(x = stage, y = avg_Success)) +
+#   geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+#   geom_text(aes(label = round(avg_Success, 3)), vjust = -0.5) + # Add mean values on top of bars
+#   labs(title = "",
+#        x = "Tournament stage",
+#        y = "Average success rate") 
+# ggsave("avg succes for stages.png")
 
 
 # Combine means into a single dataframe
@@ -287,7 +332,7 @@ means_df = data.frame(
 
 # Create a bar plot
 ggplot(means_df, aes(x = stress, y = avg_Success)) +
-  geom_bar(stat = "identity", fill = "skyblue") +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
   geom_text(aes(label = round(avg_Success, 3)), vjust = -0.5) + # Add mean values on top of bars
   labs(title = "",
        x = "Stress level",
@@ -357,7 +402,7 @@ success_shotNumber = all_shootouts %>%
 
 success_shotNumber %>% 
   ggplot(aes(x = Penalty_Number, y = avg_success)) +
-  geom_bar(stat = "identity", position = "dodge", fill = "skyblue") +
+  geom_bar(stat = "identity", position = "dodge", fill = "skyblue", color = "black") +
   geom_hline(aes(yintercept = 0.714, linetype = "M = 0.714"), color = "red") +
   scale_linetype_manual(name = "", values = "dashed") +
   geom_text(aes(label = count), position = position_dodge(width = 0.9), hjust = +0.3) +
@@ -371,18 +416,6 @@ ggsave("success rate by penalty number.png")
 
 #stress x gender
 
-all_shootouts = all_shootouts %>%
-  mutate(Stage = case_when(
-    grepl("Quarter-finals", Matchweek) ~ "Quarter-finals",
-    grepl("Semi-finals", Matchweek) ~ "Semi-finals",
-    grepl("Round of 16", Matchweek) ~ "Round of 16",
-    grepl("Final", Matchweek) | grepl("Gold-medal match", Matchweek) ~ "Final",
-    grepl("Third-place match", Matchweek) ~ "Third-place match",
-    # grepl("Repechage", Matchweek) ~ "Repechage",
-    #  grepl("Fifth-place", Matchweek) ~ "Fifth-place match",
-    TRUE ~ NA_character_ # Assign NA to rows that don't match any of the conditions
-  ))
-
 
 
 success_gender_stage = all_shootouts %>% 
@@ -392,10 +425,8 @@ success_gender_stage = all_shootouts %>%
   arrange(avg_success)
 success_gender_stage
 
-# Define the correct order of stages
+# reorder tournament stages
 stage_order <- c("Round of 16", "Quarter-finals", "Semi-finals", "Third-place match", "Final")
-
-# Convert Stage to a factor with the specified order
 success_gender_stage$Stage <- factor(success_gender_stage$Stage, levels = stage_order)
 
 
