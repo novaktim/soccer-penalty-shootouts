@@ -388,8 +388,9 @@ success_stage %>%
   scale_linetype_manual(name = "", values = "dashed") +
   labs(title = "",
        x = "Tournament stage",
-       y = "Average success rate")
-#ggsave("stages - success.png")
+       y = "Average success rate") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+ggsave("stages - success.png")
 
 #difference from mean
 # success_stage %>% 
@@ -450,6 +451,30 @@ ggplot(means_df, aes(x = stress, y = avg_Success)) +
        y = "Average success rate")
 #ggsave("avg success for stress.png")
 
+all_shootouts = all_shootouts %>% 
+  mutate(decisive = ifelse(Is_Decisive_To_Win, "Winning decisive", "Not decisive")) %>% 
+  mutate(decisive = ifelse(Is_Decisive_To_Lose, "Losing decisive", decisive))
+all_shootouts %>% 
+  group_by(Gender, decisive) %>% 
+  summarise(avg_success = mean(hasScored), count = n()) %>% 
+  ggplot(aes(
+    x = decisive,
+    y = avg_success,
+    fill = factor(Gender)
+  )) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = round(avg_success, 3)), position = position_dodge(width = 0.9), hjust = 0.3) +
+  labs(title = "",
+       #  subtitle = "Numbers on top of bars represent number of shots in database",
+       x = "",
+       y = "Average success rate",
+       fill = "Gender")
+#ggsave("avg success for stress x gender.png")
+
+
+all_shootouts %>% 
+  group_by(Gender, decisive) %>% 
+  summarise(avg_success = mean(hasScored), count = n())
 
 ####
 # Calculate average success rates and sample size by League and Gender
