@@ -314,7 +314,7 @@ all_shootouts %>%
   geom_text(aes(label = round(avg_success, 3)), vjust = -0.5) + # Add mean values on top of bars
   # geom_hline(aes(yintercept = 0.714, linetype = "M = 0.714"), color = "red") +
   # scale_linetype_manual(name = "", values = "dashed") +
-  labs(title = "Pessimistic viewpoint: Amount of shots taken is NOT considered",
+  labs(title = "Pessimistic view: Amount of shots taken is NOT considered",
        x = "Score situation",
        y = "Average success rate") 
 ggsave("Pessimistic viewpoint.png")
@@ -328,7 +328,7 @@ all_shootouts %>%
   geom_text(aes(label = round(avg_success, 3)), vjust = -0.5) + # Add mean values on top of bars
   # geom_hline(aes(yintercept = 0.714, linetype = "M = 0.714"), color = "red") +
   # scale_linetype_manual(name = "", values = "dashed") +
-  labs(title = "Optimistic viewpoint: Amount of shots taken is considered",
+  labs(title = "Optimistic view: Amount of shots taken IS considered",
        x = "Score situation",
        y = "Average success rate") 
 ggsave("Optimistic viewpoint.png")
@@ -345,7 +345,7 @@ all_shootouts %>%
   )) +
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(aes(label = round(avg_success, 3)), position = position_dodge(width = 0.9), hjust = +0.5) +
-  labs(title = "Pessimistic viewpoint: Amount of shots taken is considered",
+  labs(title = "Pessimistic view: Amount of shots taken is NOT considered",
        x = "Score situation",
        y = "Average success rate")
 ggsave("gender x pessimisitc on success.png")
@@ -360,7 +360,7 @@ all_shootouts %>%
   )) +
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(aes(label = round(avg_success, 3)), position = position_dodge(width = 0.9), hjust = +0.5) +
-  labs(title = "Optimistic viewpoint: Amount of shots taken is considered",
+  labs(title = "Optimistic view: Amount of shots taken IS considered",
        x = "Score situation",
        y = "Average success rate")
 ggsave("gender x optimistic on success.png")
@@ -380,15 +380,15 @@ ggplot(data, aes(x = Decade, y = N)) +
   geom_bar(stat = "identity", fill = "skyblue", color = "black") +
   labs(title = "Penalty Shootouts by Decade",
        x = "Decade",
-       y = "# Penalty Shootouts")
-# ggsave("shootouts by decade.png")
+       y = "# Penalty Shots")
+ ggsave("shootouts by decade.png")
 ggplot(data, aes(x = Decade, y = avg_success)) +
   geom_bar(stat = "identity", fill = "skyblue", color = "black") +
-  geom_text(aes(label = round(avg_success, 3)), vjust = -0.5) + # Add mean values on top of bars
+  geom_text(aes(label = round(avg_success, 3)), vjust = -0.3) + # Add mean values on top of bars
   labs(title = "Goal success rate by Decade",
        x = "Decade",
        y = "Average success rate")
-# ggsave("success_rate by decade.png")
+ggsave("success_rate by decade.png")
 
 
 ####### results by tournament stage
@@ -669,9 +669,12 @@ all_shootouts = all_shootouts %>%
 str(all_shootouts$Penalty_Number)
 
 
+#add starting
 mdl = glm(hasScored ~ Gender + Non_Gendered_League + Stage + Is_Decisive_To_Win  + Is_Decisive_To_Lose + Penalty_Number,
           family = binomial(), data = all_shootouts)
 summary(mdl)
 anova(mdl, test = "LRT")
+
+
 
 
