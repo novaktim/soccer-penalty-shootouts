@@ -115,16 +115,28 @@ tab = table(all_results$Round[grepl("won on penalty kicks following", all_result
 print(tab)
 # Remove games where no shootout possible by rule
 results = data.table(all_results[all_results$Round %in% names(tab),])
-relative_shootouts = results[, .(Shootouts = mean(grepl("won on penalty kicks following", Notes)) * 100), by = "Competition_Name"]
 
-ggplot(relative_shootouts, aes(y = reorder(Competition_Name, Shootouts), x = Shootouts)) +
+data = results[, .(Shootouts = mean(grepl("won on penalty kicks following", Notes)) * 100), by = "Competition_Name"]
+ggplot(data, aes(y = reorder(Competition_Name, Shootouts), x = Shootouts)) +
   geom_bar(stat = "identity", fill = "skyblue", color = "black") +
   #theme_minimal() +
   labs(title = "% Penalty Shootout happening by League",
        x = "Percentage of matches",
        y = "League")
 #ggsave("percentage of shootout by league.png")
-
+# Shootouts happening by Decade
+decades = floor(year(results$Date) / 10) * 10
+data = results[, .(Shootouts = mean(grepl("won on penalty kicks following", Notes)) * 100), by = decades]
+colnames(data)[1] = "Decade"
+data$Decade = paste0("[", data$Decade, "-", data$Decade + 10, ")")
+data$Decade[match("[2020-2030)", data$Decade)] = "[2020-now)"
+ggplot(data, aes(x = Decade, y = Shootouts)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  geom_text(aes(label = paste0(round(Shootouts, 3), "%")), vjust = -0.5) + # Add mean values on top of bars
+  labs(title = "% Penalty Shootout happening per game by Decade",
+       x = "Decade",
+       y = "Percentage of matches")
+# ggsave("percentage of shootout happening by decade.png")
 
 ##### Load in all penalty shootouts #####
 
@@ -151,6 +163,7 @@ genders = sapply(shootouts, function(x) x$Gender[1])
 # Create the bar plot by Year
 tab = table(year(matchdates))
 data = data.frame(Year = names(tab), Count = as.numeric(tab))
+
 
 # ggplot(data, aes(x = Year, y = Count)) +
 #   geom_bar(stat = "identity", fill = "skyblue", color = "black") +
