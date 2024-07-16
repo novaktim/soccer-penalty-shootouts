@@ -241,10 +241,13 @@ for (i in seq_along(shootouts)) {
 }
 
 # Test and check implementation manually of random decisives
+#this opens 5 random shootouts with had a decisive to win or to lose shot in them
 ind = which(sapply(shootouts, function(x) any(x$Is_Decisive_To_Win)))
 ind = which(sapply(shootouts, function(x) any(x$Is_Decisive_To_Lose)))
 for (i in sample(ind, 5)) {
-  View(shootouts[[i]])
+  shootouts[[i]] %>% 
+    select(c(1:4,26:38)) %>% 
+  View()
 }
 
 
@@ -256,9 +259,27 @@ print(data.table(all_shootouts)[, .("Mean True Win" = mean(Is_Decisive_To_Win),
                                     "Mean True Lose" = mean(Is_Decisive_To_Lose)), by = c("Home_Away", "team_started_shootout")])
 
 print(data.table(all_shootouts)[, .("Mean Scored" = mean(hasScored), .N), by = 
-  ifelse(all_shootouts$Goal_Difference_Pessimistic > 1, "pess leading", ifelse(all_shootouts$Goal_Difference_Pessimistic < 1, "pess behind", "pess tie"))])
+  ifelse(all_shootouts$Goal_Difference_Pessimistic >= 1, "pess leading", ifelse(all_shootouts$Goal_Difference_Pessimistic < 0, "pess behind", "pess tie"))])
+
+#when behind, the success rate goes down!
+
+all_shootouts %>% 
+  mutate(score_type = ifelse(Goal_Difference_Pessimistic >= 1, 
+                             "pess leading", ifelse(Goal_Difference_Pessimistic < 0, "pess behind", "pess tie"))) %>% 
+  group_by(score_type) %>% 
+  summarise(avg_success = mean(hasScored), count = n()) %>% 
+  arrange(avg_success)
+
+
+#optimistic view: you are only behind when the score is against you AND you have even amount of shots taken
 print(data.table(all_shootouts)[, .("Mean Scored" = mean(hasScored), .N), by = 
-  ifelse(all_shootouts$Goal_Difference_Optimistic > 1, "opti leading", ifelse(all_shootouts$Goal_Difference_Optimistic < 1, "opti behind", "opti tie"))])
+  ifelse(all_shootouts$Goal_Difference_Optimistic >= 1, "opti leading", ifelse(all_shootouts$Goal_Difference_Optimistic < 0, "opti behind", "opti tie"))])
+
+all_shootouts %>% 
+  mutate(score_type = ifelse(Goal_Difference_Optimistic >= 1, "opti leading", ifelse(Goal_Difference_Optimistic < 0, "opti behind", "opti tie"))) %>% 
+  group_by(score_type) %>% 
+  summarise(avg_success = mean(hasScored), count = n()) %>% 
+  arrange(avg_success)
 
 
 ####### results by tournament stage
