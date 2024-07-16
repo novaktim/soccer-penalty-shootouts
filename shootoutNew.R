@@ -254,6 +254,11 @@ print(mean(all_shootouts$hasScored))
 print(data.table(all_shootouts)[, .("Mean True Win" = mean(Is_Decisive_To_Win), 
                                     "Mean True Lose" = mean(Is_Decisive_To_Lose)), by = c("Home_Away", "team_started_shootout")])
 
+print(data.table(all_shootouts)[, .("Mean Scored" = mean(hasScored), .N), by = 
+  ifelse(all_shootouts$Goal_Difference_Pessimistic > 1, "pess leading", ifelse(all_shootouts$Goal_Difference_Pessimistic < 1, "pess behind", "pess tie"))])
+print(data.table(all_shootouts)[, .("Mean Scored" = mean(hasScored), .N), by = 
+  ifelse(all_shootouts$Goal_Difference_Optimistic > 1, "opti leading", ifelse(all_shootouts$Goal_Difference_Optimistic < 1, "opti behind", "opti tie"))])
+
 
 ####### results by tournament stage
 df_quarter = all_shootouts[grepl("Quarter-finals", all_shootouts$Matchweek) ,]
