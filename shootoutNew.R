@@ -455,8 +455,8 @@ success_stage = all_shootouts %>%
   summarise(avg_success = mean(hasScored), count = n()) %>% 
   filter(!is.na(Stage))
 # reorder tournament stages
-stage_order <- c("Round of 16", "Quarter-finals", "Semi-finals", "Third-place match", "Final")
-success_stage$Stage <- factor(success_stage$Stage, levels = stage_order)
+stage_order = c("Round of 16", "Quarter-finals", "Semi-finals", "Third-place match", "Final")
+success_stage$Stage = factor(success_stage$Stage, levels = stage_order)
 
 
 success_stage %>% 
@@ -567,7 +567,7 @@ overall_mean = mean(all_shootouts$hasScored)
 success_rates = success_rates %>%
   mutate(diff_from_mean = avg_success - overall_mean)
 
-success_rates$League_with_count <- paste(success_rates$League, "(N =", success_rates$count, ")")
+success_rates$League_with_count = paste(success_rates$League, "(N =", success_rates$count, ")")
 
 success_rates %>% 
   ggplot(aes(
@@ -626,8 +626,8 @@ success_gender_stage = all_shootouts %>%
 success_gender_stage
 
 # reorder tournament stages
-stage_order <- c("Round of 16", "Quarter-finals", "Semi-finals", "Third-place match", "Final")
-success_gender_stage$Stage <- factor(success_gender_stage$Stage, levels = stage_order)
+stage_order = c("Round of 16", "Quarter-finals", "Semi-finals", "Third-place match", "Final")
+success_gender_stage$Stage = factor(success_gender_stage$Stage, levels = stage_order)
 
 
 ggplot(success_gender_stage, aes(
@@ -670,6 +670,15 @@ all_shootouts %>%
 #this is wrong, dont need the avg success rate over all shots here but if the team won the shootout or not
 #TODO finish this
 #TODO success rate per decade
+
+ all_shootouts %>% 
+  mutate(team_hasWon = NA) %>% 
+  mutate(team_hasWon = ifelse(Is_Decisive_To_Win & hasScored, TRUE, team_hasWon)) %>% 
+  mutate(team_hasWon = ifelse(Is_Decisive_To_Lose & !hasScored, FALSE, team_hasWon)) %>% 
+   group_by(team_hasWon) %>% 
+   summarise(count = n())
+
+
 ############################### Modelling ###################################
 
 # all_shootouts %>% 
@@ -700,7 +709,7 @@ table(all_shootouts$Non_Gendered_League)
 
 #TODO
 #need penalty number has an ordered factor
-all_shootouts <- all_shootouts %>%
+all_shootouts = all_shootouts %>%
   mutate(Penalty_Number = factor(Penalty_Number, ordered = TRUE))
 str(all_shootouts$Penalty_Number)
 
