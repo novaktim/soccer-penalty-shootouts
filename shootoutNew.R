@@ -270,17 +270,92 @@ all_shootouts %>%
   summarise(avg_success = mean(hasScored), count = n()) %>% 
   arrange(avg_success)
 
+all_shootouts = all_shootouts %>% 
+  mutate(score_type_pessimistic = ifelse(Goal_Difference_Pessimistic >= 1, 
+                             "pess leading", ifelse(Goal_Difference_Pessimistic < 0, "pess behind", "pess tie")))%>% 
+  mutate(score_type_pessimistic = gsub("pess ", "", score_type_pessimistic))
+
 
 #optimistic view: you are only behind when the score is against you AND you have even amount of shots taken
 print(data.table(all_shootouts)[, .("Mean Scored" = mean(hasScored), .N), by = 
   ifelse(all_shootouts$Goal_Difference_Optimistic >= 1, "opti leading", ifelse(all_shootouts$Goal_Difference_Optimistic < 0, "opti behind", "opti tie"))])
 
 all_shootouts %>% 
-  mutate(score_type = ifelse(Goal_Difference_Optimistic >= 1, "opti leading", ifelse(Goal_Difference_Optimistic < 0, "opti behind", "opti tie"))) %>% 
+  mutate(score_type = ifelse(Goal_Difference_Optimistic >= 1, "opti leading",
+                             ifelse(Goal_Difference_Optimistic < 0, "opti behind", "opti tie"))) %>% 
   group_by(score_type) %>% 
   summarise(avg_success = mean(hasScored), count = n()) %>% 
   arrange(avg_success)
 
+all_shootouts = all_shootouts %>% 
+  mutate(score_type_optimistic = ifelse(Goal_Difference_Optimistic >= 1,
+                                        "opti leading", ifelse(Goal_Difference_Optimistic < 0, "opti behind", "opti tie"))) %>% 
+  mutate(score_type_optimistic = gsub("opti ", "", score_type_optimistic))
+ 
+all_shootouts %>% 
+  group_by(score_type_pessimistic) %>% 
+  summarise(avg_success = mean(hasScored), count = n()) %>% 
+  arrange(avg_success) %>% 
+  ggplot(aes(x = score_type_pessimistic, y = avg_success)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  geom_text(aes(label = round(avg_success, 3)), vjust = -0.5) + # Add mean values on top of bars
+  # geom_hline(aes(yintercept = 0.714, linetype = "M = 0.714"), color = "red") +
+  # scale_linetype_manual(name = "", values = "dashed") +
+  labs(title = "Pessimistic viewpoint: Amount of shots taken is NOT considered",
+       x = "Score situation",
+       y = "Average success rate") 
+ggsave("Pessimistic viewpoint.png")
+
+all_shootouts %>% 
+  group_by(score_type_optimistic) %>% 
+  summarise(avg_success = mean(hasScored), count = n()) %>% 
+  arrange(avg_success) %>% 
+  ggplot(aes(x = score_type_optimistic, y = avg_success)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  geom_text(aes(label = round(avg_success, 3)), vjust = -0.5) + # Add mean values on top of bars
+  # geom_hline(aes(yintercept = 0.714, linetype = "M = 0.714"), color = "red") +
+  # scale_linetype_manual(name = "", values = "dashed") +
+  labs(title = "Optimistic viewpoint: Amount of shots taken is considered",
+       x = "Score situation",
+       y = "Average success rate") 
+ggsave("Optimistic viewpoint.png")
+
+
+
+all_shootouts %>% 
+  group_by(Gender, score_type_pessimistic) %>% 
+  summarise(avg_success = mean(hasScored), count = n()) %>% 
+  ggplot(aes(
+    x = score_type_pessimistic,
+    y = avg_success,
+    fill = Gender
+  )) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = round(avg_success, 3)), position = position_dodge(width = 0.9), hjust = +0.5) +
+  labs(title = "Pessimistic viewpoint: Amount of shots taken is considered",
+       x = "Score situation",
+       y = "Average success rate")
+ggsave("gender x pessimisitc on success.png")
+
+all_shootouts %>% 
+  group_by(Gender, score_type_optimistic) %>% 
+  summarise(avg_success = mean(hasScored), count = n()) %>% 
+  ggplot(aes(
+    x = score_type_optimistic,
+    y = avg_success,
+    fill = Gender
+  )) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = round(avg_success, 3)), position = position_dodge(width = 0.9), hjust = +0.5) +
+  labs(title = "Optimistic viewpoint: Amount of shots taken is considered",
+       x = "Score situation",
+       y = "Average success rate")
+ggsave("gender x optimistic on success.png")
+#For woman, it is reversed! But small sample size
+
+all_shootouts %>% 
+  group_by(Gender, score_type_optimistic) %>% 
+  summarise(avg_success = mean(hasScored), count = n())
 
 ####### results by tournament stage
 
@@ -313,19 +388,19 @@ success_stage %>%
   scale_linetype_manual(name = "", values = "dashed") +
   labs(title = "",
        x = "Tournament stage",
-       y = "Average success rate") 
+       y = "Average success rate")
 #ggsave("stages - success.png")
 
 #difference from mean
-success_stage %>% 
-  mutate(difference = avg_success - 0.714) %>% 
-  ggplot(aes(x = Stage, y = difference)) +
-  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
-  scale_linetype_manual(name = "", values = "dashed") +
-  labs(title = "",
-       x = "Tournament stage",
-       y = "Average success rate") 
-ggsave("stages - success with differences.png")
+# success_stage %>% 
+#   mutate(difference = avg_success - 0.714) %>% 
+#   ggplot(aes(x = Stage, y = difference)) +
+#   geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+#   scale_linetype_manual(name = "", values = "dashed") +
+#   labs(title = "",
+#        x = "Tournament stage",
+#        y = "Average success rate") 
+# ggsave("stages - success with differences.png")
 
 # df_quarter = all_shootouts[grepl("Quarter-finals", all_shootouts$Matchweek) ,]
 # df_semi = all_shootouts[grepl("Semi-finals", all_shootouts$Matchweek) ,]
@@ -373,7 +448,7 @@ ggplot(means_df, aes(x = stress, y = avg_Success)) +
   labs(title = "",
        x = "Stress level",
        y = "Average success rate")
-ggsave("avg succes for stress.png")
+#ggsave("avg success for stress.png")
 
 
 ####
@@ -406,7 +481,7 @@ success_rates %>%
   
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   coord_flip()
-ggsave("Difference from Mean by League and Gender.png")
+#ggsave("Difference from Mean by League and Gender.png")
 
 
 
@@ -414,21 +489,9 @@ aggregate(hasScored ~ Gender, all_shootouts, mean)
 round(aggregate(hasScored ~ Gender, all_shootouts, mean)[1,2] - aggregate(hasScored ~ Gender, all_shootouts, mean)[2,2],3)
 #3.4% difference between men and woman
 
-##################### add mens olympic
-#tmp = all_shootouts %>% filter(League == "Olympics - Men's Tournament")
-#xlsx::write.xlsx(tmp, "olympics.xlsx", row.names = F)
-
-# olympics_men = xlsx::read.xlsx("olympics.xlsx", sheetIndex = 1)
-# all_shootouts = rbind(all_shootouts, olympics_men)
-# all_shootouts %>% filter(League == "Olympics - Men's Tournament") %>% 
-#   select(League, Gender, Match_Date, Score_Progression)
 
 
-#missing
-#results per number of shot
-#stress * gender
-#model
-#per decade
+#TODO
 
 #### success rate by shot number
 
@@ -441,19 +504,16 @@ success_shotNumber %>%
   geom_bar(stat = "identity", position = "dodge", fill = "skyblue", color = "black") +
   geom_hline(aes(yintercept = 0.714, linetype = "M = 0.714"), color = "red") +
   scale_linetype_manual(name = "", values = "dashed") +
-  geom_text(aes(label = count), position = position_dodge(width = 0.9), hjust = +0.3) +
+  geom_text(aes(label = count), position = position_dodge(width = 0.9), hjust = +0.5) +
   labs(x = "Penalty Number within a shootout",
        y = "Average success rate",
        subtitle = "Samplesize of each shot number indicated by number on top of the bar")
 
-ggsave("success rate by penalty number.png")
+#ggsave("success rate by penalty number.png")
 
 
 
-#stress x gender
-
-
-
+#################################### stress influence on success rate grouped by  gender  ###################
 success_gender_stage = all_shootouts %>% 
   group_by(Gender, Stage) %>% 
   summarise(avg_success = mean(hasScored), count = n()) %>% 
@@ -481,8 +541,31 @@ ggplot(success_gender_stage, aes(
   scale_linetype_manual(name = "", values = "dashed") 
 ggsave("gender x stage on success.png")
 
+####################### influence of starting vs non starting ###################
 
+all_shootouts %>% 
+  group_by(Gender, team_started_shootout) %>% 
+  summarise(avg_success = mean(hasScored), count = n())
 
+# all_shootouts %>% 
+#   group_by(Gender, team_started_shootout) %>% 
+#   summarise(avg_success = mean(hasScored), count = n()) %>% 
+#   ggplot(aes(
+#     x = Gender,
+#     y = avg_success,
+#     fill = factor(team_started_shootout)
+#   )) +
+#     geom_bar(stat = "identity", position = "dodge") +
+#     geom_text(aes(label = round(avg_success, 3)), position = position_dodge(width = 0.9), hjust = +0.3) +
+#     labs(subtitle = "Samplesize indicated by number on top of the bar",
+#          y = "Average Success Rate",
+#          fill = "Starts shootout") +
+#     geom_hline(aes(yintercept = 0.714, linetype = "M = 0.714"), color = "red") +
+#     scale_linetype_manual(name = "", values = "dashed") 
+
+#this is wrong, dont need the avg success rate over all shots here but if the team won the shootout or not
+#TODO finish this
+#TODO success rate per decade
 ############################### Modelling ###################################
 
 # all_shootouts %>% 
@@ -490,9 +573,37 @@ ggsave("gender x stage on success.png")
 #   mutate(shot_type = ifelse(Is_Decisive_To_Win), "decisive to win", shot_type) %>% 
 #   mutate(shot_type = ifelse(Is_Decisive_To_Lose), "decisive to lose", shot_type)
 
+
+
+# Create a new column for the non-gendered version of the tournament league
+all_shootouts = all_shootouts %>%
+  mutate(Non_Gendered_League = case_when(
+    League %in% c("AFC Asian Cup", "AFC Women's Asian Cup") ~ "AFC Asian Cup",
+    League %in% c("Africa Cup of Nations", "Africa Women Cup of Nations") ~ "Africa Cup",
+    League %in% c("CONCACAF Gold Cup", "CONCACAF Women's Championship") ~ "CONCACAF Championship",
+    League %in% c("CONMEBOL Copa América", "CONMEBOL Copa América Centenario", "Copa América Femenina") ~ "Copa América",
+    League %in% c("FIFA Women's World Cup", "FIFA World Cup") ~ "FIFA World Cup",
+    League %in% c("FIFA Confederations Cup") ~ "FIFA Confed Cup",
+    League %in% c("Olympics - Men's Tournament", "Olympics — Women's Tournament") ~ "Olympics",
+    League %in% c("UEFA European Football Championship", "UEFA Women's Championship") ~ "UEFA Euros",
+    League == "UEFA Nations League" ~ "UEFA Nations League",
+    TRUE ~ League
+  ))
+
+
+table(all_shootouts$Non_Gendered_League)
+
+
 #TODO
-#need penalty number has an ordered factor, maybe seperated by team?
-mdl = glm(hasScored ~  Is_Decisive_To_Win  + Is_Decisive_To_Lose + Penalty_Number,
+#need penalty number has an ordered factor
+all_shootouts <- all_shootouts %>%
+  mutate(Penalty_Number = factor(Penalty_Number, ordered = TRUE))
+str(all_shootouts$Penalty_Number)
+
+
+mdl = glm(hasScored ~ Gender + Non_Gendered_League + Stage + Is_Decisive_To_Win  + Is_Decisive_To_Lose + Penalty_Number,
           family = binomial(), data = all_shootouts)
 summary(mdl)
-anova(mdl)
+anova(mdl, test = "LRT")
+
+
