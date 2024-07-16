@@ -160,6 +160,19 @@ data = data.frame(Year = names(tab), Count = as.numeric(tab))
 #        y = "# Penalty Shootouts")
 #ggsave("shootouts by year.png")
 
+
+decades = floor(year(matchdates) / 10) * 10
+tab = table(paste0("[", decades, "-", decades + 10, "]"))
+data = data.frame(Decade = names(tab), Count = as.numeric(tab))
+data$Decade[match("[2020-2030]", data$Decade)] = "[2020-now]"
+ggplot(data, aes(x = Decade, y = Count)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  labs(title = "Penalty Shootouts by Decade",
+       x = "Decade",
+       y = "# Penalty Shootouts")
+# ggsave("shootouts by decade.png")
+
+
 # Create the bar plot by League
 tab = table(leagues)
 data = data.frame(League = names(tab), Count = as.numeric(tab))
