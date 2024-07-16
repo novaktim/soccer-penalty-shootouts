@@ -116,6 +116,7 @@ print(tab)
 # Remove games where no shootout possible by rule
 results = data.table(all_results[all_results$Round %in% names(tab),])
 
+# Shootouts happening by League
 data = results[, .(Shootouts = mean(grepl("won on penalty kicks following", Notes)) * 100), by = "Competition_Name"]
 ggplot(data, aes(y = reorder(Competition_Name, Shootouts), x = Shootouts)) +
   geom_bar(stat = "identity", fill = "skyblue", color = "black") +
@@ -124,6 +125,7 @@ ggplot(data, aes(y = reorder(Competition_Name, Shootouts), x = Shootouts)) +
        x = "Percentage of matches",
        y = "League")
 #ggsave("percentage of shootout by league.png")
+
 # Shootouts happening by Decade
 decades = floor(year(results$Date) / 10) * 10
 data = results[, .(Shootouts = mean(grepl("won on penalty kicks following", Notes)) * 100), by = decades]
@@ -138,8 +140,30 @@ ggplot(data, aes(x = Decade, y = Shootouts)) +
        y = "Percentage of matches")
 # ggsave("percentage of shootout happening by decade.png")
 
-##### Load in all penalty shootouts #####
+# Shootouts happening by Stage
+results = results %>%
+  mutate(Stage = case_when(
+    grepl("Quarter-finals", Round) ~ "Quarter-finals",
+    grepl("Semi-finals", Round) ~ "Semi-finals",
+    grepl("Round of 16", Round) ~ "Round of 16",
+    grepl("Final", Round) | grepl("Gold-medal match", Round) ~ "Final",
+    grepl("Third-place match", Round) ~ "Third-place match",
+    # grepl("Repechage", Round) ~ "Repechage", #sample size too small to look at these special cases
+    #  grepl("Fifth-place", Round) ~ "Fifth-place match",
+    TRUE ~ NA_character_ # Assign NA to rows that don't match any of the conditions
+  ))
+data = results[, .(Shootouts = mean(grepl("won on penalty kicks following", Notes)) * 100, .N), by = "Stage"]
+data = data[!is.na(data$Stage),]
+ggplot(data, aes(y = reorder(Stage, Shootouts), x = Shootouts)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  #theme_minimal() +
+  labs(title = "% Penalty Shootout happening by Stage",
+       x = "Percentage of matches",
+       y = "Stage")
+#ggsave("percentage of shootout by stage.png")
 
+
+##### Load in all penalty shootouts #####
 
 files = list.files("data/fbref_match_summary", full.names = T)
 shots = do.call(rbind.fill, lapply(files, readRDS))
@@ -262,6 +286,27 @@ for (i in sample(ind, 5)) {
     select(c(1:4,26:38)) %>% 
   View()
 }
+
+
+# Myth: Is the starting team winning more often?
+winner_side = sapply(shootouts, function(x) if(x$Score_Progression_Home[nrow(x)] < x$Score_Progression_Away[nrow(x)]) "Home" else "Away")
+starting_side = sapply(shootouts, function(x) x$Home_Away[x$Penalty_Number == 1])
+gender = sapply(shootouts, function(x) x$Gender[1])
+table(winner_side == starting_side)
+table(winner_side[gender == "M"] == starting_side[gender == "M"])
+table(winner_side[gender == "F"] == starting_side[gender == "F"])
+# Yes they are
+data = data.table(winner_side, starting_side, gender)
+data = data[, .(win_chance = mean(winner_side == starting_side)), by = "gender"]
+data$gender[data$gender == "M"] = "male"
+data$gender[data$gender == "F"] = "female"
+ggplot(data, aes(y = win_chance, x = gender)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  geom_text(aes(label = paste0(round(win_chance * 100, 3), "%")), vjust = -0.5) + # Add mean values on top of bars
+  labs(title = "Win chance of starting team by Gender",
+       x = "Gender",
+       y = "Win chance")
+#ggsave("percentage win of starting team by gender.png")
 
 
 all_shootouts = do.call(rbind, shootouts)
