@@ -362,7 +362,7 @@ all_shootouts %>%
   labs(title = "Pessimistic view: Amount of shots taken is NOT considered",
        x = "Score situation",
        y = "Average success rate") 
-ggsave("Pessimistic viewpoint.png")
+#ggsave("Pessimistic viewpoint.png")
 
 all_shootouts %>% 
   group_by(score_type_optimistic) %>% 
@@ -376,7 +376,7 @@ all_shootouts %>%
   labs(title = "Optimistic view: Amount of shots taken IS considered",
        x = "Score situation",
        y = "Average success rate") 
-ggsave("Optimistic viewpoint.png")
+#ggsave("Optimistic viewpoint.png")
 
 
 
@@ -393,7 +393,7 @@ all_shootouts %>%
   labs(title = "Pessimistic view: Amount of shots taken is NOT considered",
        x = "Score situation",
        y = "Average success rate")
-ggsave("gender x pessimisitc on success.png")
+#ggsave("gender x pessimisitc on success.png")
 
 all_shootouts %>% 
   group_by(Gender, score_type_optimistic) %>% 
@@ -408,7 +408,7 @@ all_shootouts %>%
   labs(title = "Optimistic view: Amount of shots taken IS considered",
        x = "Score situation",
        y = "Average success rate")
-ggsave("gender x optimistic on success.png")
+#ggsave("gender x optimistic on success.png")
 #For woman, it is reversed! But small sample size
 
 all_shootouts %>% 
@@ -426,14 +426,14 @@ ggplot(data, aes(x = Decade, y = N)) +
   labs(title = "Penalty Shootouts by Decade",
        x = "Decade",
        y = "# Penalty Shots")
- ggsave("shootouts by decade.png")
+ #ggsave("shootouts by decade.png")
 ggplot(data, aes(x = Decade, y = avg_success)) +
   geom_bar(stat = "identity", fill = "skyblue", color = "black") +
   geom_text(aes(label = round(avg_success, 3)), vjust = -0.3) + # Add mean values on top of bars
   labs(title = "Goal success rate by Decade",
        x = "Decade",
        y = "Average success rate")
-ggsave("success_rate by decade.png")
+#ggsave("success_rate by decade.png")
 
 
 ####### results by tournament stage
@@ -469,7 +469,7 @@ success_stage %>%
        x = "Tournament stage",
        y = "Average success rate") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
-ggsave("stages - success.png")
+#ggsave("stages - success.png")
 
 #difference from mean
 # success_stage %>% 
@@ -528,6 +528,7 @@ ggplot(means_df, aes(x = stress, y = avg_Success)) +
   labs(title = "",
        x = "Stress level",
        y = "Average success rate")
+
 #ggsave("avg success for stress.png")
 
 all_shootouts = all_shootouts %>% 
@@ -643,7 +644,7 @@ ggplot(success_gender_stage, aes(
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   geom_hline(aes(yintercept = 0.714, linetype = "M = 0.714"), color = "red") +
   scale_linetype_manual(name = "", values = "dashed") 
-ggsave("gender x stage on success.png")
+#ggsave("gender x stage on success.png")
 
 ####################### influence of starting vs non starting ###################
 
@@ -715,11 +716,22 @@ str(all_shootouts$Penalty_Number)
 
 
 #add starting
-mdl = glm(hasScored ~ Gender + Non_Gendered_League + Stage + Is_Decisive_To_Win  + Is_Decisive_To_Lose + Penalty_Number,
+mdl = glm(hasScored ~ Gender + Non_Gendered_League + Stage + Is_Decisive_To_Win  + Is_Decisive_To_Lose + Penalty_Number +
+            Goal_Difference_Optimistic,
           family = binomial(), data = all_shootouts)
 summary(mdl)
 anova(mdl, test = "LRT")
 
+
+all_shootouts %>% 
+  group_by(Gender, decisive) %>% 
+  summarise(count =n())
+
+
+
+  
+table(sapply(shootouts, function(x) x$Gender[1]))
+table(sapply(shootouts, nrow))
 
 
 
