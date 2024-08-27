@@ -1,7 +1,4 @@
 
-#devtools::install_github("https://github.com/JaseZiv/worldfootballR")
-
-library(worldfootballR)
 library(plyr)
 library(tidyverse)
 library(ggplot2)
@@ -10,103 +7,8 @@ library(data.table)
 library(readxl)
 
 
-########################################################################################################################
-##### Scrape all cup match results - Warning: can take some time, can also skip this and load pre-scraped data  ########
-########################################################################################################################
-
-
-# non_dom_league_url the URL for Cups and Competitions found at https://fbref.com/en/comps/
-cups = c("https://fbref.com/en/comps/685/history/Copa-America-Seasons",
-         "https://fbref.com/en/comps/158/history/Copa-America-Femenina-Seasons",
-         "https://fbref.com/en/comps/676/history/European-Championship-Seasons",
-         "https://fbref.com/en/comps/677/history/UEFA-Nations-League-Seasons",
-         "https://fbref.com/en/comps/162/history/UEFA-Womens-Euro-Seasons",
-         "https://fbref.com/en/comps/664/history/Asian-Cup-Seasons",
-         "https://fbref.com/en/comps/161/history/AFC-Womens-Asian-Cup-Seasons",
-         "https://fbref.com/en/comps/1/history/World-Cup-Seasons",
-         "https://fbref.com/en/comps/666/history/FIFA-Confederations-Cup-Seasons",
-         "https://fbref.com/en/comps/106/history/Womens-World-Cup-Seasons",
-         "https://fbref.com/en/comps/180/history/Olympics-W-Seasons",
-         "https://fbref.com/en/comps/656/history/Africa-Cup-of-Nations-Seasons",
-         "https://fbref.com/en/comps/156/history/Africa-Women-Cup-of-Nations-Seasons",
-         "https://fbref.com/en/comps/681/history/Gold-Cup-Seasons",
-         "https://fbref.com/en/comps/157/history/CONCACAF-W-Championship-Seasons")
-
-
-
-
-years = 1982:2023
-for (cup in cups) {
-  message("Scraping cup: ", cup)
-  for (year in years) {
-    message("Scraping year: ", year)
-    
-    id = paste0(year, "_", gsub("https://fbref.com/en/comps/[0-9]*/history/", "", cup))
-    dir.create("data/fbref_match_results/", showWarnings = F, recursive = T)
-    
-    file_M = paste0("data/fbref_match_results/M_", id, ".rds")
-    if(!file.exists(file_M)) {
-      tryCatch({
-        results = fb_match_results(country = "", gender = "M", season_end_year = year, tier = "", non_dom_league_url = cup)
-        
-        saveRDS(results, file_M)
-        
-      }, error = function(e) {
-        message("Error encountered: ", e$message)
-        if(e$message == "Data not available for the season(s) selected") {
-          saveRDS(NULL, file_M)
-        }
-        return()
-      })
-      Sys.sleep(5)
-    }
-    
-    # #same for woman
-    file_F = paste0("data/fbref_match_results/F_", id, ".rds")
-    if(!file.exists(file_F)) {
-      tryCatch({
-        results = fb_match_results(country = "", gender = "F", season_end_year = year, tier = "", non_dom_league_url = cup)
-        saveRDS(results, file_F)
-        
-      }, error = function(e) {
-        message("Error encountered: ", e$message)
-        if(e$message == "Data not available for the season(s) selected") {
-          saveRDS(NULL, file_F)
-        }
-        return()
-      })
-      Sys.sleep(5)
-    }
-  }
-}
-
-
-########################################################################################################################
-##### Load scraped game histories to find those which ended in a penalty shootout ############################
-########################################################################################################################
-
-
-
+# Load scraped histories of match results
 all_results = do.call(rbind.fill, lapply(list.files("data/fbref_match_results", full.names = T), readRDS))
-results = all_results[grepl("won on penalty kicks following", all_results$Notes),] #this identifies all penalty shootouts
-ids = sub(".*/matches/([^/]+)/.*", "\\1", results$MatchURL)
-for (i in seq_along(ids)) {
-  dir.create("data/fbref_match_summary/", showWarnings = F, recursive = T)
-  file = paste0("data/fbref_match_summary/", ids[i], ".rds")
-  if(!file.exists(file)) {
-    
-    tryCatch({
-      events = fb_match_summary(results$MatchURL[i], time_pause = 5)
-      saveRDS(events, file)
-      
-    }, error = function(e) {
-      message("Error encountered: ", e$message)
-      saveRDS(NULL, file)
-      return()
-    })
-  }
-}
-
 
 
 # Percentage of games that lead to a Penalty Shootout by League -> excluded Men's Olympics tournament, here we only have shootouts
@@ -124,7 +26,7 @@ ggplot(data, aes(y = reorder(Competition_Name, Shootouts), x = Shootouts)) +
   labs(title = "% Penalty Shootout happening by League",
        x = "Percentage of matches",
        y = "League")
-#ggsave("percentage of shootout by league.png")
+#ggsave("plots/percentage of shootout by league.png")
 
 # Shootouts happening by Decade
 decades = floor(year(results$Date) / 10) * 10
@@ -138,7 +40,7 @@ ggplot(data, aes(x = Decade, y = Shootouts)) +
   labs(title = "% Penalty Shootout happening per game by Decade",
        x = "Decade",
        y = "Percentage of matches")
-# ggsave("percentage of shootout happening by decade.png")
+# ggsave("plots/percentage of shootout happening by decade.png")
 
 # Shootouts happening by Stage
 results = results %>%
@@ -160,27 +62,31 @@ ggplot(data, aes(y = reorder(Stage, Shootouts), x = Shootouts)) +
   labs(title = "% Penalty Shootout happening by Stage",
        x = "Percentage of matches",
        y = "Stage")
-#ggsave("percentage of shootout by stage.png")
+#ggsave("plots/percentage of shootout by stage.png")
 
 
-##### Load in all penalty shootouts #####
+########################################################################################################################
+################ Load in all penalty shootouts ###########################
+########################################################################################################################
 
-files = list.files("data/fbref_match_summary", full.names = T)
+files = list.files("data/fbref_match_summary", full.names = T) # all events happened for all matches scraped
 shots = do.call(rbind.fill, lapply(files, readRDS))
-shots$Gender = all_results$Gender[match(shots$Game_URL, all_results$MatchURL)]
+shots$Gender = all_results$Gender[match(shots$Game_URL, all_results$MatchURL)] # Extract Gender from match results dataset
 shots = shots[order(shots$Game_URL, shots$Penalty_Number),]
-shots = shots[shots$Event_Type == "Penalty Shootout", ]
+# Remove other events like yellow-card, goal, penalty, substitute as we only need penalty shootout shots
+shots = shots[shots$Event_Type == "Penalty Shootout", ] 
 # Add manually-entered Men Olympics shootouts which are missing on fbref.com
 olympics = readxl::read_xlsx("data/olympics.xlsx")
 olympics$Home_Away = ifelse(olympics$Penalty_Number %% 2 == 1, "Home", "Away")
-shots = rbind.fill(olympics, shots)
+shots = rbind.fill(olympics, shots) # Concatenate shots from fbref and manually entered men olympics
 stopifnot(!is.na(shots$Home_Away))
 
-shootouts = split(shots, shots$Game_URL)
+
+shootouts = split(shots, shots$Game_URL) # Create list for each shootout containing their shots
 
 
 # Count the years of shootouts
-matchdates = as.Date(sapply(shootouts, function(x) x$Match_Date[1]))
+matchdates = as.Date(sapply(shootouts, function(x) x$Match_Date[1])) # [1] because is same for each shot
 leagues = sapply(shootouts, function(x) x$League[1])
 genders = sapply(shootouts, function(x) x$Gender[1])
 
@@ -194,7 +100,7 @@ data = data.frame(Year = names(tab), Count = as.numeric(tab))
 #   labs(title = "Penalty Shootouts by Year",
 #        x = "Year",
 #        y = "# Penalty Shootouts")
-#ggsave("shootouts by year.png")
+#ggsave("plots/shootouts by year.png")
 
 
 # Create the bar plot by League
@@ -206,7 +112,7 @@ ggplot(data, aes(y = reorder(League, Count), x = Count)) +
   labs(title = "Penalty Shootouts by League",
        x = "# Penalty Shootouts",
        y = "League")
-#ggsave("shootouts by league.png")
+#ggsave("plots/shootouts by league.png")
 
 # Create the bar plot by Gender
 # tab = table(genders)
@@ -216,7 +122,7 @@ ggplot(data, aes(y = reorder(League, Count), x = Count)) +
 #   labs(title = "Penalty Shootouts by Gender",
 #        x = "Gender",
 #        y = "# Penalty Shootouts")
-#ggsave("shootouts by gender.png")
+#ggsave("plots/shootouts by gender.png")
 
 
 ################### iterate through score progression, check which pens were decisive and which scored ###############################
@@ -306,7 +212,7 @@ ggplot(data, aes(y = win_chance, x = gender)) +
   labs(title = "Win chance of starting team by Gender",
        x = "Gender",
        y = "Win chance")
-#ggsave("percentage win of starting team by gender.png")
+#ggsave("plots/percentage win of starting team by gender.png")
 
 
 all_shootouts = do.call(rbind, shootouts)
@@ -362,7 +268,7 @@ all_shootouts %>%
   labs(title = "Pessimistic view: Amount of shots taken is NOT considered",
        x = "Score situation",
        y = "Average success rate") 
-#ggsave("Pessimistic viewpoint.png")
+#ggsave("plots/Pessimistic viewpoint.png")
 
 all_shootouts %>% 
   group_by(score_type_optimistic) %>% 
@@ -376,7 +282,7 @@ all_shootouts %>%
   labs(title = "Optimistic view: Amount of shots taken IS considered",
        x = "Score situation",
        y = "Average success rate") 
-#ggsave("Optimistic viewpoint.png")
+#ggsave("plots/Optimistic viewpoint.png")
 
 
 
@@ -393,7 +299,7 @@ all_shootouts %>%
   labs(title = "Pessimistic view: Amount of shots taken is NOT considered",
        x = "Score situation",
        y = "Average success rate")
-#ggsave("gender x pessimisitc on success.png")
+#ggsave("plots/gender x pessimisitc on success.png")
 
 all_shootouts %>% 
   group_by(Gender, score_type_optimistic) %>% 
@@ -408,7 +314,7 @@ all_shootouts %>%
   labs(title = "Optimistic view: Amount of shots taken IS considered",
        x = "Score situation",
        y = "Average success rate")
-#ggsave("gender x optimistic on success.png")
+#ggsave("plots/gender x optimistic on success.png")
 #For woman, it is reversed! But small sample size
 
 all_shootouts %>% 
@@ -426,14 +332,14 @@ ggplot(data, aes(x = Decade, y = N)) +
   labs(title = "Penalty Shootouts by Decade",
        x = "Decade",
        y = "# Penalty Shots")
- #ggsave("shootouts by decade.png")
+ #ggsave("plots/shootouts by decade.png")
 ggplot(data, aes(x = Decade, y = avg_success)) +
   geom_bar(stat = "identity", fill = "skyblue", color = "black") +
   geom_text(aes(label = round(avg_success, 3)), vjust = -0.3) + # Add mean values on top of bars
   labs(title = "Goal success rate by Decade",
        x = "Decade",
        y = "Average success rate")
-#ggsave("success_rate by decade.png")
+#ggsave("plots/success_rate by decade.png")
 
 
 ####### results by tournament stage
@@ -469,7 +375,7 @@ success_stage %>%
        x = "Tournament stage",
        y = "Average success rate") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
-#ggsave("stages - success.png")
+#ggsave("plots/stages - success.png")
 
 #difference from mean
 # success_stage %>% 
@@ -480,7 +386,7 @@ success_stage %>%
 #   labs(title = "",
 #        x = "Tournament stage",
 #        y = "Average success rate") 
-# ggsave("stages - success with differences.png")
+# ggsave("plots/stages - success with differences.png")
 
 # df_quarter = all_shootouts[grepl("Quarter-finals", all_shootouts$Matchweek) ,]
 # df_semi = all_shootouts[grepl("Semi-finals", all_shootouts$Matchweek) ,]
@@ -508,7 +414,7 @@ success_stage %>%
 #   labs(title = "",
 #        x = "Tournament stage",
 #        y = "Average success rate") 
-# ggsave("avg succes for stages.png")
+# ggsave("plots/avg succes for stages.png")
 
 
 # Combine means into a single dataframe
@@ -529,7 +435,7 @@ ggplot(means_df, aes(x = stress, y = avg_Success)) +
        x = "Stress level",
        y = "Average success rate")
 
-#ggsave("avg success for stress.png")
+#ggsave("plots/avg success for stress.png")
 
 all_shootouts = all_shootouts %>% 
   mutate(decisive = ifelse(Is_Decisive_To_Win, "Winning decisive", "Not decisive")) %>% 
@@ -549,7 +455,7 @@ all_shootouts %>%
        x = "",
        y = "Average success rate",
        fill = "Gender")
-#ggsave("avg success for stress x gender.png")
+#ggsave("plots/avg success for stress x gender.png")
 
 
 all_shootouts %>% 
@@ -586,7 +492,7 @@ success_rates %>%
   
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   coord_flip()
-#ggsave("Difference from Mean by League and Gender.png")
+#ggsave("plots/Difference from Mean by League and Gender.png")
 
 
 
@@ -614,7 +520,7 @@ success_shotNumber %>%
        y = "Average success rate",
        subtitle = "Samplesize of each shot number indicated by number on top of the bar")
 
-#ggsave("success rate by penalty number.png")
+#ggsave("plots/success rate by penalty number.png")
 
 
 
@@ -644,7 +550,7 @@ ggplot(success_gender_stage, aes(
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   geom_hline(aes(yintercept = 0.714, linetype = "M = 0.714"), color = "red") +
   scale_linetype_manual(name = "", values = "dashed") 
-#ggsave("gender x stage on success.png")
+#ggsave("plots/gender x stage on success.png")
 
 ####################### influence of starting vs non starting ###################
 
