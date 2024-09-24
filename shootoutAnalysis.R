@@ -329,10 +329,10 @@ data$Decade = paste0("[", data$Decade, "-", data$Decade + 10, ")")
 data$Decade[match("[2020-2030)", data$Decade)] = "[2020-now)"
 ggplot(data, aes(x = Decade, y = N)) +
   geom_bar(stat = "identity", fill = "skyblue", color = "black") +
-  labs(title = "Penalty Shootouts by Decade",
+  labs(title = "Penalty Shots by Decade",
        x = "Decade",
        y = "# Penalty Shots")
- #ggsave("plots/shootouts by decade.png")
+#ggsave("plots/shots by decade.png")
 ggplot(data, aes(x = Decade, y = avg_success)) +
   geom_bar(stat = "identity", fill = "skyblue", color = "black") +
   geom_text(aes(label = round(avg_success, 3)), vjust = -0.3) + # Add mean values on top of bars
@@ -518,7 +518,7 @@ success_shotNumber %>%
   geom_text(aes(label = count), position = position_dodge(width = 0.9), hjust = +0.5) +
   labs(x = "Penalty Number within a shootout",
        y = "Average success rate",
-       subtitle = "Samplesize of each shot number indicated by number on top of the bar")
+       subtitle = "Samplesize of each shot number indicated by number on top of bar")
 
 #ggsave("plots/success rate by penalty number.png")
 

@@ -10,7 +10,7 @@ library(plyr)
 
 
 # which cups to scrape from fbref.com
-# the URL for Cups and Competitions found at https://fbref.com/en/comps/
+# the URL for Cups and Competitions are listed at https://fbref.com/en/comps/
 cups = c("https://fbref.com/en/comps/685/history/Copa-America-Seasons",
          "https://fbref.com/en/comps/158/history/Copa-America-Femenina-Seasons",
          "https://fbref.com/en/comps/676/history/European-Championship-Seasons",
