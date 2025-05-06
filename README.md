@@ -1,3 +1,8 @@
+This project presents a visual exploration of penalty shootouts in international football tournaments. Drawing on data from over 150 shootouts and more than 1,500 individual kicks the insights include:
+- Shootout chance: The probabilities of an game ending in a shootout over different scenarios.
+- Psychological Goal Pressure: The impact of match situation (e.g., decisive vs. non-decisive kicks) and shot order on scoring probability.
+- Gender Comparisons: Differences in shot success between men’s and women’s competitions.
+
 ## Shootout happening chance
 <table>
   <tr>
